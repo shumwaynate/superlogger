@@ -34,6 +34,16 @@
 -export([init/1,terminate/3,code_change/2]).
 %% event Callbacks
 -export([handle_event/2,handle_info/2,handle_call/2]).
+-export([start_event_manager/1, notify_manager/2]).
+
+
+start_event_manager(Name) ->
+    {ok, P} = gen_event:start(),
+    gen_event:add_handler(P, gen_event_template, standard_io),
+    register(Name, P).
+
+notify_manager(P, Message) ->
+    gen_event:notify(P, {Message, {no_frequency, self()}}).
 
 %%%===================================================================
 %%% Mandatory callback functions
@@ -89,13 +99,14 @@ handle_call(_Request,State)->
 %%
 %% @end
 %%--------------------------------------------------------------------
-handle_event(Message,State) ->
+handle_event(Message,State={standard_io, Count}) ->
     %Modify the state as appropriate.
     io:format("~p~n", [State]),
     io:format("~p~n", [Message]),
     case Message of
-        {msg, _Data} -> io:format("Nice Job Scrub"), {ok,State};
-        {candy, _Data} -> io:format("I like candy"),  {ok,State}
+        {msg, _Data} -> io:format("Nice Job Scrub~n"), {ok, State};
+        {candy, _Data} -> io:format("I like candy~n"),  {ok, State};
+        {increment, _Data} -> io:format("Count: ~p~n", [Count]),  {ok, {standard_io, Count+1}}
     end.
 
 
@@ -105,4 +116,11 @@ handle_event(Message,State) ->
 %%
 %% Unit tests go here. 
 %%
+    handle_event_test_() ->
+    [
+        ?_assertEqual({ok, {standard_io, 2}}, handle_event({increment, {no_frequency, somewhere}}, {standard_io, 1})),
+        ?_assertEqual({ok, {standard_io, 3}}, handle_event({increment, {no_frequency, somewhere}}, {standard_io, 2})),
+        ?_assertEqual({ok, {standard_io, 2}}, handle_event({msg, {no_frequency, somewhere}}, {standard_io, 2})),
+        ?_assertEqual({ok, {standard_io, 2}}, handle_event({candy, {no_frequency, somewhere}}, {standard_io, 2}))
+    ].
 -endif.
