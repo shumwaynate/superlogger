@@ -45,11 +45,12 @@ terminate(_Reason, _State, _Data) ->
 code_change(_Vsn, _State) ->
     ok.
 
-%wow
-init(_Start_info) ->
+init(standard_io) ->
     %% This function has a value that is a tuple
     %% consisting of ok and the initial state data.
-    {ok, {standard_io, 1}}.
+    {ok, {standard_io, 1}};
+init(Args) ->
+    {error, {args, Args}}.
 
 
 %%%===================================================================
@@ -90,12 +91,12 @@ handle_call(_Request,State)->
 %%--------------------------------------------------------------------
 handle_event(Message,State) ->
     %Modify the state as appropriate.
+    io:format("~p~n", [State]),
+    io:format("~p~n", [Message]),
     case Message of
-        msg -> io:format("Nice Job Scrub");
-        candy -> io:format("I like candy")
-    end,
-
-    {ok,State}.
+        {msg, _Data} -> io:format("Nice Job Scrub"), {ok,State};
+        {candy, _Data} -> io:format("I like candy"),  {ok,State}
+    end.
 
 
 %% This code is included in the compiled code only if 
